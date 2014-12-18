@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include "../ini.h"
 #include "INIReader.h"
-
 using std::string;
 
 INIReader::INIReader(const string& filename)
@@ -21,6 +20,14 @@ INIReader::INIReader(const string& filename)
 INIReader::INIReader(FILE* filehandle)
 {
     _error = ini_parse_file(filehandle, ValueHandler, this);
+}
+
+INIReader::~INIReader()
+{
+    // Clean up the field sets
+    std::map<std::string, std::set<std::string>*>::iterator fieldSetsIt;
+    for (fieldSetsIt = _fields.begin(); fieldSetsIt != _fields.end(); ++fieldSetsIt)
+        delete fieldSetsIt->second;
 }
 
 int INIReader::ParseError() const
@@ -67,7 +74,22 @@ bool INIReader::GetBoolean(const string& section, const string& name, bool defau
         return default_value;
 }
 
-string INIReader::MakeKey(const string& section, const string& name)
+std::set<std::string> INIReader::GetSections() const
+{
+    return _sections;
+}
+
+std::set<std::string> INIReader::GetFields(std::string section) const
+{
+    string sectionKey = section;
+    std::transform(sectionKey.begin(), sectionKey.end(), sectionKey.begin(), ::tolower);
+    std::map<std::string, std::set<std::string>*>::const_iterator fieldSetIt = _fields.find(sectionKey);
+    if(fieldSetIt==_fields.end())
+        return std::set<std::string>();
+    return *(fieldSetIt->second);
+}
+
+std::string INIReader::MakeKey(const std::string& section, const std::string& name)
 {
     string key = section + "=" + name;
     // Convert to lower case to make section/name lookups case-insensitive
@@ -79,9 +101,30 @@ int INIReader::ValueHandler(void* user, const char* section, const char* name,
                             const char* value)
 {
     INIReader* reader = (INIReader*)user;
+
+    // Add the value to the lookup map
     string key = MakeKey(section, name);
     if (reader->_values[key].size() > 0)
         reader->_values[key] += "\n";
     reader->_values[key] += value;
+
+    // Insert the section in the sections set
+    reader->_sections.insert(section);
+
+    // Add the value to the values set
+    string sectionKey = section;
+    std::transform(sectionKey.begin(), sectionKey.end(), sectionKey.begin(), ::tolower);
+
+    std::set<std::string>* fieldsSet;
+    std::map<std::string, std::set<std::string>*>::iterator fieldSetIt = reader->_fields.find(sectionKey);
+    if(fieldSetIt==reader->_fields.end())
+    {
+        fieldsSet = new std::set<std::string>();
+        reader->_fields.insert ( std::pair<std::string, std::set<std::string>*>(sectionKey,fieldsSet) );
+    } else {
+        fieldsSet=fieldSetIt->second;
+    }
+    fieldsSet->insert(name);
+
     return 1;
 }
