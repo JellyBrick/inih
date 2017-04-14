@@ -188,10 +188,9 @@ int ini_parse(const char* filename, ini_handler handler, void* user)
     file = fopen(filename, "r");
     if (!file)
         return -1;
-	
-	//tigra: можно буферизировать
-	setvbuf(file, NULL, _IOFBF, 128*1024 );
-	
+
+    setvbuf(file, NULL, _IOFBF, 128*1024 );
+
     error = ini_parse_file(file, handler, user);
     fclose(file);
     return error;
