@@ -20,19 +20,16 @@ int main()
 
     std::cout<<"Found sections and fields:"<<std::endl;
     std::set<std::string> sections = reader.GetSections();
-    for(std::set<std::string>::iterator sectionsIt = sections.begin();
-        sectionsIt!=sections.end();
-        sectionsIt++)
+    for(const auto& sectionsIt:
+        sections)
     {
-        std::cout << "  [" << *sectionsIt << "]: ";
-        std::set<std::string> fields = reader.GetFields(*sectionsIt);
-        for(std::set<std::string>::iterator fieldsIt = fields.begin();
-            fieldsIt!=fields.end();
-            fieldsIt++)
+        std::cout << "  [" << sectionsIt << "]: ";
+        std::set<std::string> fields = reader.GetFields(sectionsIt);
+        for(const auto& fieldsIt:
+            fields)
         {
-            if(fieldsIt!=fields.begin())
-                std::cout << ", ";
-            std::cout << *fieldsIt;
+            std::cout << ", ";
+            std::cout << fieldsIt;
         }
         std::cout << std::endl;
     }
